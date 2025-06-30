@@ -28,10 +28,10 @@ jobs:
       - name: Deploy to distribution repository
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          personal_token: ${{ secrets.DIST_REPO_TOKEN }}
           publish_dir: ./dist
           destination_dir: .
-          external_repository: ${{ secrets.DIST_REPO }}
+          external_repository: NataPeralta/pagination-js
           publish_branch: main
           force_orphan: true
           user_name: 'github-actions[bot]'

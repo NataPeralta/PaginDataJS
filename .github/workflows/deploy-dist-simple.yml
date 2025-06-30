@@ -1,8 +1,8 @@
-name: Deploy to Distribution Repository
+name: Deploy to Distribution Repository (DISABLED)
 
 on:
-  push:
-    branches: [main, master]
+  # push:
+  #   branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
