@@ -31,7 +31,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           # Clonar el repo de distribución
-          git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/NataPeralta/pagination-js.git dist-repo
+          git clone https://x-access-token:${{ secrets.DIST_REPO_TOKEN }}@github.com/NataPeralta/pagination-js.git dist-repo
 
           # Limpiar y copiar archivos
           cd dist-repo
