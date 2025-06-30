@@ -28,7 +28,7 @@ jobs:
       - name: Deploy to distribution repository
         uses: peaceiris/actions-gh-pages@v3
         with:
-          personal_token: ${{ secrets.DIST_REPO_TOKEN }}
+          personal_token: ${{ secrets.REPO_TOKEN }}
           publish_dir: ./dist
           destination_dir: .
           external_repository: NataPeralta/pagination-js

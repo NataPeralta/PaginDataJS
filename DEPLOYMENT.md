@@ -18,8 +18,8 @@ Ve a **Settings > Secrets and variables > Actions** en tu repo principal (`pagin
 
 #### Opción A: Usando Personal Access Token (Recomendado)
 
-- `DIST_REPO_TOKEN`: Token de acceso personal con permisos de repo
-- `DIST_REPO`: `NataPeralta/pagination-js` (ya configurado en el workflow)
+- `REPO_TOKEN`: Token de acceso personal con permisos de repo
+
 
 #### Opción B: Usando GitHub Token
 
@@ -31,7 +31,7 @@ Ve a **Settings > Secrets and variables > Actions** en tu repo principal (`pagin
 2. Click **Generate new token**
 3. Selecciona permisos:
    - `repo` (acceso completo a repositorios)
-4. Copia el token y guárdalo como `DIST_REPO_TOKEN`
+4. Copia el token y guárdalo como `REPO_TOKEN`
 
 ### 4. Configurar Permisos del Workflow
 
@@ -46,13 +46,12 @@ En tu repo principal, ve a **Settings > Actions > General** y asegúrate de que:
 
 - Archivo: `.github/workflows/deploy-dist-simple.yml`
 - Usa git push directo
-- Requiere `DIST_REPO_TOKEN` y `DIST_REPO`
+- Requiere `REPO_TOKEN`
 
 ### Workflow con gh-pages Action
 
 - Archivo: `.github/workflows/deploy-dist.yml`
 - Usa la acción peaceiris/actions-gh-pages
-- Requiere `DIST_REPO`
 
 ## Cómo Funciona
 
