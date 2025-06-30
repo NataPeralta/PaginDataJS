@@ -108,13 +108,6 @@ pagination.init();
 
 ---
 
-## 🛠️ Desarrollo
-
-El código fuente está en:  
-https://github.com/NataPeralta/pagination-js-source
-
----
-
 ## 📝 Licencia
 
 MIT

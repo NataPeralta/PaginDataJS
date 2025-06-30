@@ -4,6 +4,7 @@
   "description": "A lightweight pagination library",
   "main": "dist/index.js",
   "module": "dist/index.js",
+  "type": "module",
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "vite",
@@ -11,7 +12,8 @@
     "build:deep": "npm run clean:dist && vite build && npm run copy-readme",
     "copy-readme": "cp README.md dist/README.md",
     "clean:build": "rm -rf build",
-    "clean:dist": "rm -rf dist"
+    "clean:dist": "rm -rf dist",
+    "test": "vitest"
   },
   "keywords": [
     "pagination",
@@ -21,10 +23,14 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
     "concurrently": "^8.0.0",
+    "jsdom": "^26.1.0",
     "serve": "^14.0.0",
     "terser": "^5.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "vite": "^7.0.0"
