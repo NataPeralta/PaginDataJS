@@ -2,27 +2,28 @@
 
 Este proyecto está configurado para usar dos repositorios:
 
-1. **Repo principal**: Código fuente completo
-2. **Repo de distribución**: Solo archivos compilados (`dist/`)
+1. **Repo principal**: `pagination-js-source` (código fuente completo)
+2. **Repo de distribución**: `pagination-js` (solo archivos compilados (`dist/`))
 
 ## Configuración Requerida
 
-### 1. Crear el Repo de Distribución
+### 1. Repositorios Configurados
 
-Crea un nuevo repositorio en GitHub llamado `pagination-js-dist` (o el nombre que prefieras).
+- **Código fuente**: https://github.com/NataPeralta/pagination-js-source
+- **Distribución**: https://github.com/NataPeralta/pagination-js
 
 ### 2. Configurar Secrets en el Repo Principal
 
-Ve a **Settings > Secrets and variables > Actions** en tu repo principal y agrega:
+Ve a **Settings > Secrets and variables > Actions** en tu repo principal (`pagination-js-source`) y agrega:
 
 #### Opción A: Usando Personal Access Token (Recomendado)
 
 - `DIST_REPO_TOKEN`: Token de acceso personal con permisos de repo
-- `DIST_REPO`: Nombre del repo de distribución (ej: `tu-usuario/pagination-js-dist`)
+- `DIST_REPO`: `NataPeralta/pagination-js` (ya configurado en el workflow)
 
 #### Opción B: Usando GitHub Token
 
-- `DIST_REPO`: Nombre del repo de distribución
+- `DIST_REPO`: `NataPeralta/pagination-js` (ya configurado en el workflow)
 
 ### 3. Generar Personal Access Token (si usas Opción A)
 
