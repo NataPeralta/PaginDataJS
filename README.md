@@ -1,26 +1,27 @@
-# Pagination Vanilla JS
+# PaginDataJS
 
-Una librería de paginación ligera y moderna escrita en JavaScript vanilla, sin dependencias externas. Incluye soporte para breakpoints responsivos y manejo de elementos DOM dinámicos.
+A lightweight and modern pagination library written in vanilla JavaScript with no external dependencies. Includes responsive breakpoints support and dynamic DOM element handling.
 
-## 🚀 Características
+## 🚀 Features
 
-- ✅ **Sin dependencias** - JavaScript vanilla puro
-- ✅ **Responsive** - Breakpoints automáticos según el tamaño de pantalla
-- ✅ **Flexible** - Soporta arrays de datos y elementos DOM
-- ✅ **Ligera** - ~15KB minificado
-- ✅ **Moderno** - ES5 compatible, funciona en todos los navegadores
-- ✅ **Customizable** - Múltiples opciones de configuración
+- ✅ **No Dependencies** - Pure vanilla JavaScript
+- ✅ **Responsive** - Automatic breakpoints based on screen size
+- ✅ **Flexible** - Supports data arrays and DOM elements
+- ✅ **Lightweight** - ~15KB minified
+- ✅ **Modern** - ES5 compatible, works in all browsers
+- ✅ **Customizable** - Multiple configuration options
 
-## 📦 Instalación
+## 📦 Installation
 
-### CDN (Recomendado)
+### CDN
 ```html
-<script src="https://cdn.jsdelivr.net/gh/tu-usuario/pagination-vanilla.js/pagination-vanilla.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/NataPeralta/PaginDataJS/pagination.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/NataPeralta/PaginDataJS/pagination.min.js"></script>
 ```
 
-## 🎯 Uso básico
+## 🎯 Basic Usage
 
-### 1. HTML básico
+### 1. Basic HTML
 ```html
 <!DOCTYPE html>
 <html>
@@ -28,27 +29,27 @@ Una librería de paginación ligera y moderna escrita en JavaScript vanilla, sin
     <title>Pagination Demo</title>
 </head>
 <body>
-    <!-- Contenedor para los datos -->
+    <!-- Data container -->
     <div id="data-container"></div>
     
-    <!-- Contenedor para la paginación -->
+    <!-- Pagination container -->
     <div id="pagination-container"></div>
     
     <script src="pagination-vanilla.js"></script>
     <script>
-        // Datos de ejemplo
+        // Sample data
         const data = [
             { id: 1, name: 'Item 1' },
             { id: 2, name: 'Item 2' },
-            // ... más datos
+            // ... more data
         ];
         
-        // Inicializar paginación
+        // Initialize pagination
         Pagination.create('#pagination-container', {
             dataSource: data,
             pageSize: 10,
             callback: function(data, pagination) {
-                // Renderizar datos
+                // Render data
                 const container = document.getElementById('data-container');
                 container.innerHTML = data.map(item => 
                     `<div>${item.name}</div>`
@@ -60,13 +61,13 @@ Una librería de paginación ligera y moderna escrita en JavaScript vanilla, sin
 </html>
 ```
 
-### 2. Con elementos DOM
+### 2. With DOM Elements
 ```html
 <div id="cards-container">
     <div class="card">Card 1</div>
     <div class="card">Card 2</div>
     <div class="card">Card 3</div>
-    <!-- ... más cards -->
+    <!-- ... more cards -->
 </div>
 
 <div id="pagination-container"></div>
@@ -78,25 +79,25 @@ Una librería de paginación ligera y moderna escrita en JavaScript vanilla, sin
         dataSource: cards,
         pageSize: 6,
         callback: function(data, pagination) {
-            // Ocultar todas las cards
+            // Hide all cards
             cards.forEach(card => card.style.display = 'none');
-            // Mostrar solo las cards de la página actual
+            // Show only current page cards
             data.forEach(card => card.style.display = 'block');
         }
     });
 </script>
 ```
 
-## 📱 Breakpoints Responsivos
+## 📱 Responsive Breakpoints
 
-### Configuración automática según el tamaño de pantalla
+### Automatic configuration based on screen size
 ```javascript
 Pagination.create('#pagination-container', {
     dataSource: data,
-    pageSize: 9, // Configuración por defecto
+    pageSize: 9, // Default configuration
     pageRange: 2,
     breakpoints: {
-        0: {    // Móvil (< 768px)
+        0: {    // Mobile (< 768px)
             pageSize: 3,
             pageRange: 1
         },
@@ -110,41 +111,41 @@ Pagination.create('#pagination-container', {
         }
     },
     callback: function(data, pagination) {
-        // Tu lógica de renderizado
+        // Your rendering logic
     }
 });
 ```
 
-### Comportamiento de breakpoints
-| **Tamaño de pantalla** | **pageSize** | **pageRange** |
-|----------------------|-------------|---------------|
+### Breakpoint behavior
+| **Screen Size** | **pageSize** | **pageRange** |
+|----------------|-------------|---------------|
 | **< 768px** | 3 | 1 |
 | **768px - 1023px** | 6 | 2 |
 | **≥ 1024px** | 9 | 2 |
 
-## ⚙️ Opciones de configuración
+## ⚙️ Configuration Options
 
-### Propiedades principales
+### Main properties
 ```javascript
 {
-    dataSource: [],           // Array de datos o elementos DOM
-    pageSize: 10,            // Elementos por página
-    pageNumber: 1,           // Página inicial
-    pageRange: 2,            // Rango de páginas visibles
-    totalNumber: 0,          // Total de elementos (auto-detectado)
-    showPrevious: true,      // Mostrar botón "Anterior"
-    showNext: true,          // Mostrar botón "Siguiente"
-    showFirstOnEllipsisShow: true,  // Mostrar "Primera" en elipsis
-    showLastOnEllipsisShow: true,   // Mostrar "Última" en elipsis
-    showGoInput: false,      // Mostrar input para ir a página
-    showGoButton: false,     // Mostrar botón "Ir"
-    pageLink: '',            // Enlace base para páginas
-    prevText: 'Anterior',    // Texto del botón anterior
-    nextText: 'Siguiente',   // Texto del botón siguiente
-    ellipsisText: '...',     // Texto de elipsis
-    goButtonText: 'Ir',      // Texto del botón ir
+    dataSource: [],           // Array of data or DOM elements
+    pageSize: 10,            // Items per page
+    pageNumber: 1,           // Initial page
+    pageRange: 2,            // Visible page range
+    totalNumber: 0,          // Total items (auto-detected)
+    showPrevious: true,      // Show "Previous" button
+    showNext: true,          // Show "Next" button
+    showFirstOnEllipsisShow: true,  // Show "First" on ellipsis
+    showLastOnEllipsisShow: true,   // Show "Last" on ellipsis
+    showGoInput: false,      // Show go to page input
+    showGoButton: false,     // Show "Go" button
+    pageLink: '',            // Base link for pages
+    prevText: 'Previous',    // Previous button text
+    nextText: 'Next',        // Next button text
+    ellipsisText: '...',     // Ellipsis text
+    goButtonText: 'Go',      // Go button text
     formatGoButtonText: function(pageNumber) {
-        return 'Ir a ' + pageNumber;
+        return 'Go to ' + pageNumber;
     },
     formatPageNumber: function(pageNumber) {
         return pageNumber;
@@ -153,43 +154,43 @@ Pagination.create('#pagination-container', {
         return totalNumber;
     },
     formatNavigator: function(pageNumber, totalNumber, pageSize, pageRange) {
-        return 'Página ' + pageNumber + ' de ' + Math.ceil(totalNumber / pageSize);
+        return 'Page ' + pageNumber + ' of ' + Math.ceil(totalNumber / pageSize);
     },
     callback: function(data, pagination) {
-        // Función llamada cuando cambia la página
+        // Function called when page changes
     },
-    breakpoints: {}          // Configuración de breakpoints responsivos
+    breakpoints: {}          // Responsive breakpoints configuration
 }
 ```
 
-## 🔧 API de métodos
+## 🔧 API Methods
 
-### Métodos disponibles
+### Available methods
 ```javascript
 const pagination = Pagination.create('#container', options);
 
-// Navegación
-pagination.go(5);           // Ir a la página 5
-pagination.previous();      // Página anterior
-pagination.next();          // Página siguiente
-pagination.first();         // Primera página
-pagination.last();          // Última página
+// Navigation
+pagination.go(5);           // Go to page 5
+pagination.previous();      // Previous page
+pagination.next();          // Next page
+pagination.first();         // First page
+pagination.last();          // Last page
 
 // Control
-pagination.show();          // Mostrar paginación
-pagination.hide();          // Ocultar paginación
-pagination.refresh();       // Refrescar paginación
-pagination.destroy();       // Destruir instancia
+pagination.show();          // Show pagination
+pagination.hide();          // Hide pagination
+pagination.refresh();       // Refresh pagination
+pagination.destroy();       // Destroy instance
 
-// Información
-pagination.getPageNumber(); // Obtener página actual
-pagination.getPageSize();   // Obtener elementos por página
-pagination.getTotalNumber(); // Obtener total de elementos
+// Information
+pagination.getPageNumber(); // Get current page
+pagination.getPageSize();   // Get items per page
+pagination.getTotalNumber(); // Get total items
 ```
 
-## 🎨 Personalización CSS
+## 🎨 CSS Customization
 
-### Estilos básicos
+### Basic styles
 ```css
 .pagination-container {
     display: flex;
@@ -226,7 +227,7 @@ pagination.getTotalNumber(); // Obtener total de elementos
 }
 ```
 
-### Estilos responsivos
+### Responsive styles
 ```css
 @media (max-width: 768px) {
     .pagination-container {
@@ -241,14 +242,14 @@ pagination.getTotalNumber(); // Obtener total de elementos
 }
 ```
 
-## 📋 Ejemplos completos
+## 📋 Complete Examples
 
-### Ejemplo 1: Lista de productos
+### Example 1: Product List
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Productos</title>
+    <title>Products</title>
     <style>
         .product-grid {
             display: grid;
@@ -270,9 +271,9 @@ pagination.getTotalNumber(); // Obtener total de elementos
     <script src="pagination-vanilla.js"></script>
     <script>
         const products = [
-            { id: 1, name: 'Producto 1', price: 100 },
-            { id: 2, name: 'Producto 2', price: 200 },
-            // ... más productos
+            { id: 1, name: 'Product 1', price: 100 },
+            { id: 2, name: 'Product 2', price: 200 },
+            // ... more products
         ];
         
         Pagination.create('#pagination-container', {
@@ -298,13 +299,13 @@ pagination.getTotalNumber(); // Obtener total de elementos
 </html>
 ```
 
-### Ejemplo 2: Tabla de datos
+### Example 2: Data Table
 ```html
 <table id="data-table">
     <thead>
         <tr>
             <th>ID</th>
-            <th>Nombre</th>
+            <th>Name</th>
             <th>Email</th>
         </tr>
     </thead>
@@ -315,9 +316,9 @@ pagination.getTotalNumber(); // Obtener total de elementos
 
 <script>
     const users = [
-        { id: 1, name: 'Juan', email: 'juan@email.com' },
-        { id: 2, name: 'María', email: 'maria@email.com' },
-        // ... más usuarios
+        { id: 1, name: 'John', email: 'john@email.com' },
+        { id: 2, name: 'Jane', email: 'jane@email.com' },
+        // ... more users
     ];
     
     Pagination.create('#pagination-container', {
@@ -337,49 +338,49 @@ pagination.getTotalNumber(); // Obtener total de elementos
 </script>
 ```
 
-## 🐛 Solución de problemas
+## 🐛 Troubleshooting
 
-### Problema: Los elementos DOM no se muestran
-**Solución:** Asegúrate de que el callback maneje correctamente los elementos DOM:
+### Problem: DOM elements not showing
+**Solution:** Make sure the callback handles DOM elements correctly:
 ```javascript
 callback: function(data, pagination) {
-    // Para elementos DOM, usar display none/block
+    // For DOM elements, use display none/block
     allElements.forEach(el => el.style.display = 'none');
     data.forEach(el => el.style.display = 'block');
 }
 ```
 
-### Problema: Los breakpoints no funcionan
-**Solución:** Verifica que los breakpoints estén configurados correctamente:
+### Problem: Breakpoints not working
+**Solution:** Verify breakpoints are configured correctly:
 ```javascript
 breakpoints: {
-    0: { pageSize: 3 },      // Siempre incluir breakpoint 0
+    0: { pageSize: 3 },      // Always include breakpoint 0
     768: { pageSize: 6 },
     1024: { pageSize: 9 }
 }
 ```
 
-### Problema: La paginación no se actualiza
-**Solución:** Llama al método `refresh()` después de cambiar los datos:
+### Problem: Pagination not updating
+**Solution:** Call the `refresh()` method after changing data:
 ```javascript
-// Después de actualizar dataSource
+// After updating dataSource
 pagination.refresh();
 ```
 
-## 📄 Licencia
+## 📄 License
 
-MIT License - Libre para uso comercial y personal.
+MIT License - Free for commercial and personal use.
 
-## 🤝 Contribuir
+## 🤝 Contributing
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📞 Soporte
+## 📞 Support
 
-- 📧 Email: tu-email@ejemplo.com
-- 🐛 Issues: [GitHub Issues](https://github.com/tu-usuario/pagination-vanilla.js/issues)
-- 📖 Documentación: [Wiki](https://github.com/tu-usuario/pagination-vanilla.js/wiki) 
+- 📧 Email: nata.peralta@example.com
+- 🐛 Issues: [GitHub Issues](https://github.com/NataPeralta/PaginDataJS/issues)
+- 📖 Documentation: [Wiki](https://github.com/NataPeralta/PaginDataJS/wiki) 
