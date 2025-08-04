@@ -1,767 +1,1344 @@
-const DEFAULT_OPTIONS = {
-  totalNumber: 0,
-  pageNumber: 1,
-  pageSize: 10,
-  pageRange: 2,
-  showPrevious: true,
-  showNext: true,
-  showPageNumbers: true,
-  showNavigator: false,
-  showGoInput: false,
-  showGoButton: false,
-  showSizeChanger: false,
-  sizeChangerOptions: [10, 20, 50, 100],
-  pageLink: "",
-  prevText: "&lsaquo;",
-  nextText: "&rsaquo;",
-  ellipsisText: "...",
-  goButtonText: "Go",
-  classPrefix: "paginationjs",
-  activeClassName: "active",
-  disableClassName: "disabled",
-  formatNavigator: "Total <%= totalNumber %> items",
-  formatGoInput: "<%= input %>",
-  formatGoButton: "<%= button %>",
-  position: "bottom",
-  autoHidePrevious: false,
-  autoHideNext: false,
-  triggerPagingOnInit: true,
-  resetPageNumberOnInit: true,
-  hideOnlyOnePage: false,
-  hideFirstOnEllipsisShow: false,
-  hideLastOnEllipsisShow: false,
-  groupItems: false,
-  groupClass: "pagination-group",
-  showEllipsis: false
-};
-function mergeOptions(options) {
-  return { ...DEFAULT_OPTIONS, ...options };
-}
-function replaceVariables(template, variables) {
-  let formattedString = template;
-  for (const [key, value] of Object.entries(variables)) {
-    const regexp = new RegExp("<%=\\s*" + key + "\\s*%>", "img");
-    formattedString = formattedString.replace(regexp, value);
+/*
+ * Released under the MIT license.
+ */
+
+(function (global) {
+
+  var pluginName = 'pagination';
+  var pluginHookMethod = 'addHook';
+  var eventPrefix = '__pagination-';
+
+  // Check if pagination is already defined
+  if (global.Pagination) {
+    throwError('plugin conflicted, the name "Pagination" has been taken by another plugin.');
   }
-  return formattedString;
-}
-function getLocator(locator) {
-  if (typeof locator === "string") {
-    return locator;
-  } else if (typeof locator === "function") {
-    return locator();
-  } else {
-    throw new Error('"locator" is incorrect. Expect string or function type.');
+
+  // Helper functions
+  var Helpers = {};
+
+  function throwError(content) {
+    throw new Error('Pagination: ' + content);
   }
-}
-function filterDataWithLocator(dataSource, locator) {
-  if (Array.isArray(dataSource)) {
-    return dataSource;
+
+  function isNumeric(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
   }
-  if (!locator) {
-    return dataSource;
+
+  function getObjectType(object) {
+    var tmp = typeof (object);
+    return (tmp == "object" ? object == null && "null" || Object.prototype.toString.call(object).slice(8, -1) : tmp).toLowerCase();
   }
-  const locatorPath = getLocator(locator);
-  let filteredData;
-  if (typeof dataSource === "object") {
-    try {
-      const parts = locatorPath.split(".");
-      for (const part of parts) {
-        filteredData = (filteredData ? filteredData : dataSource)[part];
-      }
-    } catch (e) {
-    }
-    if (!filteredData) {
-      throw new Error("dataSource." + locatorPath + " is undefined.");
-    } else if (!Array.isArray(filteredData)) {
-      throw new Error("dataSource." + locatorPath + " should be an Array.");
-    }
-  }
-  return filteredData || dataSource;
-}
-function generateElipsisHTML(classPrefix, ellipsisText) {
-  return `<li class="${classPrefix}-ellipsis"><a>${ellipsisText}</a></li>`;
-}
-function generatePageHTML({
-  classPrefix,
-  pageNumber,
-  isActive = false,
-  activeClassName
-}) {
-  const activeClass = isActive && activeClassName ? ` ${activeClassName}` : "";
-  return `<li class="${classPrefix}-page${activeClass}" data-num="${pageNumber}"><a>${pageNumber}</a></li>`;
-}
-function generateBackHTML(classPrefix, pageNumber, text, options) {
-  return `<li class="${classPrefix}-prev ${options.nextClassName || ""}" title="Previous page" data-num="${pageNumber}"><a>${text}</a></li>`;
-}
-function generateNextHTML(classPrefix, pageNumber, text, options) {
-  return `<li class="${classPrefix}-next ${options.nextClassName || ""}" title="Next page" data-num="${pageNumber}"><a>${text}</a></li>`;
-}
-function generateHTML(args, options) {
-  const currentPage = args.currentPage;
-  const pagesToShow = args.pagesToShow;
-  args.rangeStart;
-  args.rangeEnd;
-  const totalPage = args.totalPage;
-  let html = "";
-  let sizeSelect = `<select class="${options.classPrefix}-size-select">`;
-  const goInput = `<input type="text" class="${options.classPrefix}-go-pagenumber">`;
-  const goButton = `<input type="button" class="${options.classPrefix}-go-button" value="${options.goButtonText}">`;
-  let formattedString;
-  const formatSizeChanger = typeof options.formatSizeChanger === "function" ? options.formatSizeChanger(sizeSelect, options.totalNumber) : options.formatSizeChanger;
-  const formatNavigator = typeof options.formatNavigator === "function" ? options.formatNavigator(currentPage, totalPage, options.totalNumber) : options.formatNavigator;
-  const formatGoInput = typeof options.formatGoInput === "function" ? options.formatGoInput(goInput, currentPage, totalPage, options.totalNumber) : options.formatGoInput;
-  const formatGoButton = typeof options.formatGoButton === "function" ? options.formatGoButton(goButton, currentPage, totalPage, options.totalNumber) : options.formatGoButton;
-  typeof options.autoHidePrevious === "function" ? options.autoHidePrevious() : options.autoHidePrevious;
-  typeof options.autoHideNext === "function" ? options.autoHideNext() : options.autoHideNext;
-  const header = typeof options.header === "function" ? options.header(currentPage, totalPage, options.totalNumber) : options.header;
-  const footer = typeof options.footer === "function" ? options.footer(currentPage, totalPage, options.totalNumber) : options.footer;
-  if (header) {
-    formattedString = replaceVariables(header, {
-      currentPage,
-      totalPage,
-      totalNumber: options.totalNumber
-    });
-    html += formattedString;
-  }
-  if (options.showNavigator && formatNavigator) {
-    formattedString = replaceVariables(formatNavigator, {
-      currentPage,
-      totalPage,
-      totalNumber: options.totalNumber,
-      rangeStart: (currentPage - 1) * options.pageSize + 1,
-      rangeEnd: Math.min(currentPage * options.pageSize, options.totalNumber)
-    });
-    html += `<div class="${options.classPrefix}-nav">${formattedString}</div>`;
-  }
-  if (options.showPrevious || options.showPageNumbers || options.showNext) {
-    html += '<div class="paginationjs-pages">';
-    html += options.ulClassName ? `<ul class="${options.ulClassName}">` : "<ul>";
-    if (options.showPrevious) {
-      html += generateBackHTML(
-        options.classPrefix,
-        currentPage - 1,
-        options.prevText || "",
-        options
-      );
-    }
-    if (options.showPageNumbers) {
-      if (pagesToShow && pagesToShow.length > 0) {
-        pagesToShow.forEach((item) => {
-          if (typeof item === "number") {
-            html += generatePageHTML({
-              classPrefix: options.classPrefix,
-              pageNumber: item,
-              isActive: item === currentPage,
-              activeClassName: options.activeClassName
-            });
-          } else if (item === "createElipsisHTML") {
-            html += generateElipsisHTML(options.classPrefix, options.ellipsisText);
-          }
-        });
-      } else {
-        for (let i = 1; i <= totalPage; i++) {
-          html += generatePageHTML({
-            classPrefix: options.classPrefix,
-            pageNumber: i,
-            isActive: i === currentPage,
-            activeClassName: options.activeClassName
-          });
-        }
-      }
-    }
-    if (options.showNext) {
-      html += generateNextHTML(
-        options.classPrefix,
-        currentPage + 1,
-        options.nextText || "",
-        options
-      );
-    }
-    html += "</ul></div>";
-  }
-  if (options.showSizeChanger && Array.isArray(options.sizeChangerOptions)) {
-    if (options.sizeChangerOptions.indexOf(options.pageSize) === -1) {
-      options.sizeChangerOptions.unshift(options.pageSize);
-      options.sizeChangerOptions.sort((a, b) => a - b);
-    }
-    for (let i = 0; i < options.sizeChangerOptions.length; i++) {
-      sizeSelect += `<option value="${options.sizeChangerOptions[i]}"${options.sizeChangerOptions[i] === options.pageSize ? " selected" : ""}>${options.sizeChangerOptions[i]} / page</option>`;
-    }
-    sizeSelect += "</select>";
-    formattedString = sizeSelect;
-    if (formatSizeChanger) {
-      formattedString = replaceVariables(formatSizeChanger, {
-        length: sizeSelect,
-        total: options.totalNumber
-      });
-    }
-    html += `<div class="paginationjs-size-changer">${formattedString}</div>`;
-  }
-  if (options.showGoInput && formatGoInput) {
-    formattedString = replaceVariables(formatGoInput, {
-      currentPage,
-      totalPage,
-      totalNumber: options.totalNumber,
-      input: goInput
-    });
-    html += `<div class="${options.classPrefix}-go-input">${formattedString}</div>`;
-  }
-  if (options.showGoButton && formatGoButton) {
-    formattedString = replaceVariables(formatGoButton, {
-      currentPage,
-      totalPage,
-      totalNumber: options.totalNumber,
-      button: goButton
-    });
-    html += `<div class="${options.classPrefix}-go-button">${formattedString}</div>`;
-  }
-  if (footer) {
-    formattedString = replaceVariables(footer, {
-      currentPage,
-      totalPage,
-      totalNumber: options.totalNumber
-    });
-    html += formattedString;
-  }
-  return html;
-}
-class EventHandler {
-  constructor(options, model, el) {
-    this.options = options;
-    this.model = model;
-    this.el = el;
-  }
-  bindEvents() {
-    this.bindPageClick();
-    this.bindSizeChanger();
-    this.bindGoButton();
-    this.bindGoInput();
-    this.bindEllipsisEvents();
-  }
-  bindPageClick() {
-    const classPrefix = this.options.classPrefix || "paginationjs";
-    this.el.addEventListener("click", (e) => {
-      const target = e.target;
-      const pageElement = target.closest(`.${classPrefix}-page`);
-      if (pageElement && !pageElement.classList.contains(this.options.disableClassName || "disabled")) {
-        const pageNumber = parseInt(pageElement.getAttribute("data-num") || "1");
-        this.goToPage(pageNumber);
-        return;
-      }
-      const prevElement = target.closest(`.${classPrefix}-prev`);
-      if (prevElement && !prevElement.classList.contains(this.options.disableClassName || "disabled")) {
-        const pageNumber = parseInt(prevElement.getAttribute("data-num") || "1");
-        this.goToPage(pageNumber);
-        return;
-      }
-      const nextElement = target.closest(`.${classPrefix}-next`);
-      if (nextElement && !nextElement.classList.contains(this.options.disableClassName || "disabled")) {
-        const pageNumber = parseInt(nextElement.getAttribute("data-num") || "1");
-        this.goToPage(pageNumber);
-        return;
-      }
-    });
-  }
-  bindSizeChanger() {
-    if (!this.options.showSizeChanger) return;
-    const classPrefix = this.options.classPrefix || "paginationjs";
-    const sizeSelector = this.el.querySelector(`.${classPrefix}-size-select`);
-    if (sizeSelector) {
-      sizeSelector.addEventListener("change", (e) => {
-        const target = e.target;
-        const size = parseInt(target.value);
-        if (this.options.beforeSizeSelectorChange) {
-          const result = this.options.beforeSizeSelectorChange(e, size);
-          if (result === false) return;
-        }
-        this.model.pageSize = size;
-        this.model.pageNumber = 1;
-        this.triggerPaging();
-        if (this.options.afterSizeSelectorChange) {
-          this.options.afterSizeSelectorChange(e, size);
-        }
-      });
-    }
-  }
-  bindGoButton() {
-    if (!this.options.showGoButton) return;
-    const classPrefix = this.options.classPrefix || "paginationjs";
-    const goButton = this.el.querySelector(`.${classPrefix}-go-button`);
-    if (goButton) {
-      goButton.addEventListener("click", (e) => {
-        const pageNumber = this.getGoInputValue();
-        if (this.options.beforeGoButtonOnClick) {
-          const result = this.options.beforeGoButtonOnClick(e, pageNumber);
-          if (result === false) return;
-        }
-        this.goToPage(parseInt(pageNumber));
-        if (this.options.afterGoButtonOnClick) {
-          this.options.afterGoButtonOnClick(e, pageNumber);
-        }
-      });
-    }
-  }
-  bindGoInput() {
-    if (!this.options.showGoInput) return;
-    const classPrefix = this.options.classPrefix || "paginationjs";
-    const goInput = this.el.querySelector(`.${classPrefix}-go-pagenumber`);
-    if (goInput) {
-      goInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          const pageNumber = this.getGoInputValue();
-          if (this.options.beforeGoInputOnEnter) {
-            const result = this.options.beforeGoInputOnEnter(e, pageNumber);
-            if (result === false) return;
-          }
-          this.goToPage(parseInt(pageNumber));
-          if (this.options.afterGoInputOnEnter) {
-            this.options.afterGoInputOnEnter(e, pageNumber);
-          }
-        }
-      });
-    }
-  }
-  getGoInputValue() {
-    const classPrefix = this.options.classPrefix || "paginationjs";
-    const goInput = this.el.querySelector(`.${classPrefix}-go-pagenumber`);
-    return goInput ? goInput.value : "1";
-  }
-  goToPage(pageNumber) {
-    const totalPage = Math.ceil(this.model.totalNumber / this.model.pageSize);
-    if (pageNumber < 1) {
-      pageNumber = 1;
-    } else if (pageNumber > totalPage) {
-      pageNumber = totalPage;
-    }
-    if (pageNumber !== this.model.pageNumber) {
-      this.model.pageNumber = pageNumber;
-      this.triggerPaging();
-    }
-  }
-  triggerPaging() {
-    const event = new CustomEvent("pagination", {
-      detail: {
-        pageNumber: this.model.pageNumber
-      }
-    });
-    this.el.dispatchEvent(event);
-  }
-  bindEllipsisEvents() {
-    if (!this.options.ellipsisClickable) return;
-    const classPrefix = this.options.classPrefix || "paginationjs";
-    this.el.addEventListener("click", (e) => {
-      const target = e.target;
-      const ellipsisButton = target.closest(`.${classPrefix}-ellipsis-go-btn`);
-      if (ellipsisButton) {
-        const ellipsisContainer = ellipsisButton.closest(`.${classPrefix}-ellipsis`);
-        const input = ellipsisContainer.querySelector(
-          `.${classPrefix}-ellipsis-page-input`
-        );
-        if (input && input.value) {
-          const pageNumber = parseInt(input.value);
-          this.goToPage(pageNumber);
-          input.value = "";
-        }
-      }
-    });
-    this.el.addEventListener("keypress", (e) => {
-      const target = e.target;
-      if (target.classList.contains(`${classPrefix}-ellipsis-page-input`) && e.key === "Enter") {
-        const input = target;
-        if (input.value) {
-          const pageNumber = parseInt(input.value);
-          this.goToPage(pageNumber);
-          input.value = "";
-        }
-      }
-    });
-  }
-}
-class DataHandler {
-  constructor(options, model) {
-    this.options = options;
-    this.model = model;
-  }
-  async getData() {
-    const dataSource = this.options.dataSource;
-    if (!dataSource) {
-      return [];
-    }
-    if (Array.isArray(dataSource)) {
-      return this.processArrayData(dataSource);
-    }
-    if (typeof dataSource === "function") {
-      return this.processFunctionData(dataSource);
-    }
-    if (typeof dataSource === "string") {
-      return this.processAjaxData(dataSource);
+
+  ['Object', 'Array', 'String'].forEach(function (name) {
+    Helpers['is' + name] = function (object) {
+      return getObjectType(object) === name.toLowerCase();
+    };
+  });
+
+  // DOM helpers
+  function $(selector) {
+    if (typeof selector === 'string') {
+      return document.querySelectorAll(selector);
+    } else if (selector instanceof Element) {
+      return [selector];
+    } else if (selector instanceof NodeList) {
+      return Array.from(selector);
     }
     return [];
   }
-  processArrayData(data) {
-    const filteredData = filterDataWithLocator(data, this.options.locator);
-    this.model.totalNumber = filteredData.length;
-    if (this.options.groupItems) {
-      return this.groupData(filteredData);
-    }
-    return this.paginateData(filteredData);
+
+  function createElement(tag, className, innerHTML) {
+    var element = document.createElement(tag);
+    if (className) element.className = className;
+    if (innerHTML) element.innerHTML = innerHTML;
+    return element;
   }
-  async processFunctionData(dataFunction) {
-    return new Promise((resolve) => {
-      dataFunction((data) => {
-        const filteredData = filterDataWithLocator(data, this.options.locator);
-        this.model.totalNumber = filteredData.length;
-        if (this.options.groupItems) {
-          resolve(this.groupData(filteredData));
+
+  function addEvent(element, event, handler) {
+    if (element.addEventListener) {
+      element.addEventListener(event, handler);
+    } else if (element.attachEvent) {
+      element.attachEvent('on' + event, handler);
+    }
+  }
+
+  function removeEvent(element, event, handler) {
+    if (element.removeEventListener) {
+      element.removeEventListener(event, handler);
+    } else if (element.detachEvent) {
+      element.detachEvent('on' + event, handler);
+    }
+  }
+
+  function triggerEvent(element, eventName, data) {
+    var event = new CustomEvent(eventName, { detail: data });
+    element.dispatchEvent(event);
+  }
+
+  // Extend function
+  function extend(target, source) {
+    for (var key in source) {
+      if (source.hasOwnProperty(key)) {
+        target[key] = source[key];
+      }
+    }
+    return target;
+  }
+
+  function deepExtend(target, source) {
+    for (var key in source) {
+      if (source.hasOwnProperty(key)) {
+        if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
+          target[key] = target[key] || {};
+          deepExtend(target[key], source[key]);
         } else {
-          resolve(this.paginateData(filteredData));
+          target[key] = source[key];
+        }
+      }
+    }
+    return target;
+  }
+
+  // Main Pagination class
+  function Pagination(container, options) {
+    this.container = container;
+    this.attributes = deepExtend({}, Pagination.defaults);
+    extend(this.attributes, options);
+    this.model = {
+      pageRange: this.attributes.pageRange,
+      pageSize: this.attributes.pageSize
+    };
+    this.disabled = !!this.attributes.disabled;
+    this.isAsync = false;
+    this.isDynamicTotalNumber = false;
+
+    // Breakpoints system
+    this.breakpoints = this.attributes.breakpoints || {};
+    this.currentBreakpoint = null;
+    this.resizeTimeout = null;
+
+    this.initialize();
+
+    // Initialize breakpoints if they exist
+    if (Object.keys(this.breakpoints).length > 0) {
+      this.initializeBreakpoints();
+    }
+  }
+
+  Pagination.prototype = {
+
+    initialize: function () {
+      var self = this;
+
+      // Cache data for current instance
+      if (!self.container.paginationData) {
+        self.container.paginationData = {};
+      }
+
+      if (self.callHook('beforeInit') === false) return;
+
+      // Pagination has been initialized, destroy it
+      if (self.container.paginationData.initialized) {
+        var existingPagination = self.container.querySelector('.paginationjs');
+        if (existingPagination) {
+          existingPagination.remove();
+        }
+      }
+
+      // Parse dataSource to find available paging data
+      self.parseDataSource(self.attributes.dataSource, function (dataSource) {
+
+        // Asynchronous mode
+        self.isAsync = Helpers.isString(dataSource);
+        if (Helpers.isArray(dataSource)) {
+          self.model.totalNumber = self.attributes.totalNumber = dataSource.length;
+        }
+
+        // Asynchronous mode and a 'totalNumberLocator' has been specified
+        self.isDynamicTotalNumber = self.isAsync && self.attributes.totalNumberLocator;
+
+        var el = self.render(true);
+
+        // Add extra className to the pagination element
+        if (self.attributes.className) {
+          el.classList.add(self.attributes.className);
+        }
+
+        self.model.el = el;
+
+        // Append / prepend pagination element to the container
+        if (self.attributes.position === 'bottom') {
+          self.container.appendChild(el);
+        } else {
+          self.container.insertBefore(el, self.container.firstChild);
+        }
+
+        // Bind events
+        self.observer();
+
+        // Mark pagination has been initialized
+        self.container.paginationData.initialized = true;
+
+        // Call hook after initialization
+        self.callHook('afterInit', el);
+      });
+    },
+
+    render: function (isBoot) {
+      var self = this;
+      var model = self.model;
+      var el = model.el || createElement('div', 'paginationjs');
+      var isForced = isBoot !== true;
+
+      self.callHook('beforeRender', isForced);
+
+      var currentPage = model.pageNumber || self.attributes.pageNumber;
+      var pageRange = self.attributes.pageRange || 0;
+      var totalPage = self.getTotalPage();
+
+      var rangeStart = currentPage - pageRange;
+      var rangeEnd = currentPage + pageRange;
+
+      if (rangeEnd > totalPage) {
+        rangeEnd = totalPage;
+        rangeStart = totalPage - pageRange * 2;
+        rangeStart = rangeStart < 1 ? 1 : rangeStart;
+      }
+
+      if (rangeStart <= 1) {
+        rangeStart = 1;
+        rangeEnd = Math.min(pageRange * 2 + 1, totalPage);
+      }
+
+      el.innerHTML = self.generateHTML({
+        currentPage: currentPage,
+        pageRange: pageRange,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd
+      });
+
+      // Whether to hide pagination when there is only one page
+      if (self.attributes.hideOnlyOnePage) {
+        el.style.display = totalPage <= 1 ? 'none' : 'block';
+      }
+
+      self.callHook('afterRender', isForced);
+
+      return el;
+    },
+
+    getPageLinkTag: function (index) {
+      var pageLink = this.attributes.pageLink;
+      return pageLink ? `<a href="${pageLink}">${index}</a>` : `<a>${index}</a>`;
+    },
+
+    generatePageNumbersHTML: function (args) {
+      var self = this;
+      var currentPage = args.currentPage;
+      var totalPage = self.getTotalPage();
+      var rangeStart = args.rangeStart;
+      var rangeEnd = args.rangeEnd;
+      var html = '';
+      var i;
+
+      var ellipsisText = self.attributes.ellipsisText;
+      var classPrefix = self.attributes.classPrefix;
+      var pageClassName = self.attributes.pageClassName || '';
+      var activeClassName = self.attributes.activeClassName || '';
+      var disableClassName = self.attributes.disableClassName || '';
+
+      // Display all page numbers if page range disabled
+      if (self.attributes.pageRange === null) {
+        for (i = 1; i <= totalPage; i++) {
+          if (i == currentPage) {
+            html += `<li class="${classPrefix}-page J-paginationjs-page ${pageClassName} ${activeClassName}" data-num="${i}"><a>${i}</a></li>`;
+          } else {
+            html += `<li class="${classPrefix}-page J-paginationjs-page ${pageClassName}" data-num="${i}">${self.getPageLinkTag(i)}</li>`;
+          }
+        }
+        return html;
+      }
+
+      if (rangeStart <= 3) {
+        for (i = 1; i < rangeStart; i++) {
+          if (i == currentPage) {
+            html += `<li class="${classPrefix}-page J-paginationjs-page ${pageClassName} ${activeClassName}" data-num="${i}"><a>${i}</a></li>`;
+          } else {
+            html += `<li class="${classPrefix}-page J-paginationjs-page ${pageClassName}" data-num="${i}">${self.getPageLinkTag(i)}</li>`;
+          }
+        }
+      } else {
+        if (!self.attributes.hideFirstOnEllipsisShow) {
+          html += `<li class="${classPrefix}-page ${classPrefix}-first J-paginationjs-page ${pageClassName}" data-num="1">${self.getPageLinkTag(1)}</li>`;
+        }
+        html += `<li class="${classPrefix}-ellipsis ${disableClassName}"><a>${ellipsisText}</a></li>`;
+      }
+
+      for (i = rangeStart; i <= rangeEnd; i++) {
+        if (i == currentPage) {
+          html += `<li class="${classPrefix}-page J-paginationjs-page ${pageClassName} ${activeClassName}" data-num="${i}"><a>${i}</a></li>`;
+        } else {
+          html += `<li class="${classPrefix}-page J-paginationjs-page ${pageClassName}" data-num="${i}">${self.getPageLinkTag(i)}</li>`;
+        }
+      }
+
+      if (rangeEnd >= totalPage - 2) {
+        for (i = rangeEnd + 1; i <= totalPage; i++) {
+          html += `<li class="${classPrefix}-page J-paginationjs-page ${pageClassName}" data-num="${i}">${self.getPageLinkTag(i)}</li>`;
+        }
+      } else {
+        html += `<li class="${classPrefix}-ellipsis ${disableClassName}"><a>${ellipsisText}</a></li>`;
+
+        if (!self.attributes.hideLastOnEllipsisShow) {
+          html += `<li class="${classPrefix}-page ${classPrefix}-last J-paginationjs-page ${pageClassName}" data-num="${totalPage}">${self.getPageLinkTag(totalPage)}</li>`;
+        }
+      }
+
+      return html;
+    },
+
+    generateHTML: function (args) {
+      var self = this;
+      var currentPage = args.currentPage;
+      var totalPage = self.getTotalPage();
+      var totalNumber = self.getTotalNumber();
+
+      var pageSize = self.attributes.pageSize;
+      var showPrevious = self.attributes.showPrevious;
+      var showNext = self.attributes.showNext;
+      var showPageNumbers = self.attributes.showPageNumbers;
+      var showNavigator = self.attributes.showNavigator;
+      var showSizeChanger = self.attributes.showSizeChanger;
+      var sizeChangerOptions = self.attributes.sizeChangerOptions;
+      var showGoInput = self.attributes.showGoInput;
+      var showGoButton = self.attributes.showGoButton;
+
+      var prevText = self.attributes.prevText;
+      var nextText = self.attributes.nextText;
+      var goButtonText = self.attributes.goButtonText;
+
+      var classPrefix = self.attributes.classPrefix;
+      var disableClassName = self.attributes.disableClassName || '';
+      var ulClassName = self.attributes.ulClassName || '';
+      var prevClassName = self.attributes.prevClassName || '';
+      var nextClassName = self.attributes.nextClassName || '';
+
+      var html = '';
+      var sizeSelect = `<select class="J-paginationjs-size-select">`;
+      var goInput = '<input type="text" class="J-paginationjs-go-pagenumber">';
+      var goButton = `<input type="button" class="J-paginationjs-go-button" value="${goButtonText}">`;
+      var formattedString;
+
+      var formatSizeChanger = typeof self.attributes.formatSizeChanger === 'function' ? self.attributes.formatSizeChanger(currentPage, totalPage, totalNumber) : self.attributes.formatSizeChanger;
+      var formatNavigator = typeof self.attributes.formatNavigator === 'function' ? self.attributes.formatNavigator(currentPage, totalPage, totalNumber) : self.attributes.formatNavigator;
+      var formatGoInput = typeof self.attributes.formatGoInput === 'function' ? self.attributes.formatGoInput(goInput, currentPage, totalPage, totalNumber) : self.attributes.formatGoInput;
+      var formatGoButton = typeof self.attributes.formatGoButton === 'function' ? self.attributes.formatGoButton(goButton, currentPage, totalPage, totalNumber) : self.attributes.formatGoButton;
+
+      var autoHidePrevious = typeof self.attributes.autoHidePrevious === 'function' ? self.attributes.autoHidePrevious() : self.attributes.autoHidePrevious;
+      var autoHideNext = typeof self.attributes.autoHideNext === 'function' ? self.attributes.autoHideNext() : self.attributes.autoHideNext;
+
+      var header = typeof self.attributes.header === 'function' ? self.attributes.header(currentPage, totalPage, totalNumber) : self.attributes.header;
+      var footer = typeof self.attributes.footer === 'function' ? self.attributes.footer(currentPage, totalPage, totalNumber) : self.attributes.footer;
+
+      // Prepend extra contents to the pagination buttons
+      if (header) {
+        formattedString = self.replaceVariables(header, {
+          currentPage: currentPage,
+          totalPage: totalPage,
+          totalNumber: totalNumber
+        });
+        html += formattedString;
+      }
+
+      // Whether to display navigator
+      if (showNavigator) {
+        if (formatNavigator) {
+          formattedString = self.replaceVariables(formatNavigator, {
+            currentPage: currentPage,
+            totalPage: totalPage,
+            totalNumber: totalNumber,
+            rangeStart: (currentPage - 1) * pageSize + 1,
+            rangeEnd: Math.min(currentPage * pageSize, totalNumber)
+          });
+          html += `<div class="${classPrefix}-nav J-paginationjs-nav">${formattedString}</div>`;
+        }
+      }
+
+      if (showPrevious || showPageNumbers || showNext) {
+        html += '<div class="paginationjs-pages">';
+
+        if (ulClassName) {
+          html += `<ul class="${ulClassName}">`;
+        } else {
+          html += '<ul>';
+        }
+
+        // Whether to display Previous button
+        if (showPrevious) {
+          if (currentPage <= 1) {
+            if (!autoHidePrevious) {
+              html += `<li class="${classPrefix}-prev ${disableClassName} ${prevClassName}"><a>${prevText}</a></li>`;
+            }
+          } else {
+            html += `<li class="${classPrefix}-prev J-paginationjs-previous ${prevClassName}" data-num="${currentPage - 1}" title="Previous page">${self.getPageLinkTag(prevText)}</li>`;
+          }
+        }
+
+        // Whether to display page numbers
+        if (showPageNumbers) {
+          html += self.generatePageNumbersHTML(args);
+        }
+
+        // Whether to display Next button
+        if (showNext) {
+          if (currentPage >= totalPage) {
+            if (!autoHideNext) {
+              html += `<li class="${classPrefix}-next ${disableClassName} ${nextClassName}"><a>${nextText}</a></li>`;
+            }
+          } else {
+            html += `<li class="${classPrefix}-next J-paginationjs-next ${nextClassName}" data-num="${currentPage + 1}" title="Next page">${self.getPageLinkTag(nextText)}</li>`;
+          }
+        }
+        html += `</ul></div>`;
+      }
+
+      if (showSizeChanger) {
+        if (Helpers.isArray(sizeChangerOptions)) {
+          if (sizeChangerOptions.indexOf(pageSize) === -1) {
+            sizeChangerOptions.unshift(pageSize);
+            sizeChangerOptions.sort((a, b) => a - b);
+          }
+          for (let i = 0; i < sizeChangerOptions.length; i++) {
+            sizeSelect += `<option value="${sizeChangerOptions[i]}"${(sizeChangerOptions[i] === pageSize ? ' selected' : '')}>${sizeChangerOptions[i]} / page</option>`;
+          }
+          sizeSelect += `</select>`;
+          formattedString = sizeSelect;
+
+          if (formatSizeChanger) {
+            formattedString = self.replaceVariables(formatSizeChanger, {
+              length: sizeSelect,
+              total: totalNumber
+            });
+          }
+          html += `<div class="paginationjs-size-changer">${formattedString}</div>`;
+        }
+      }
+
+      // Whether to display Go input
+      if (showGoInput) {
+        if (formatGoInput) {
+          formattedString = self.replaceVariables(formatGoInput, {
+            currentPage: currentPage,
+            totalPage: totalPage,
+            totalNumber: totalNumber,
+            input: goInput
+          });
+          html += `<div class="${classPrefix}-go-input">${formattedString}</div>`;
+        }
+      }
+
+      // Whether to display Go button
+      if (showGoButton) {
+        if (formatGoButton) {
+          formattedString = self.replaceVariables(formatGoButton, {
+            currentPage: currentPage,
+            totalPage: totalPage,
+            totalNumber: totalNumber,
+            button: goButton
+          });
+          html += `<div class="${classPrefix}-go-button">${formattedString}</div>`;
+        }
+      }
+
+      // Append extra contents to the pagination buttons
+      if (footer) {
+        formattedString = self.replaceVariables(footer, {
+          currentPage: currentPage,
+          totalPage: totalPage,
+          totalNumber: totalNumber
+        });
+        html += formattedString;
+      }
+
+      return html;
+    },
+
+    findTotalNumberFromRemoteResponse: function (response) {
+      this.model.totalNumber = this.attributes.totalNumberLocator(response);
+    },
+
+    go: function (number, callback) {
+      var self = this;
+      var model = self.model;
+
+      if (self.disabled) return;
+
+      var pageNumber = number;
+      pageNumber = parseInt(pageNumber);
+
+      if (!pageNumber || pageNumber < 1) return;
+
+      var pageSize = self.attributes.pageSize;
+      var totalNumber = self.getTotalNumber();
+      var totalPage = self.getTotalPage();
+
+      if (totalNumber > 0 && pageNumber > totalPage) return;
+
+      // Pick paging data in synchronous mode
+      if (!self.isAsync) {
+        render(self.getPagingData(pageNumber));
+        return;
+      }
+
+      var postData = {};
+      var alias = self.attributes.alias || {};
+      var pageSizeName = alias.pageSize ? alias.pageSize : 'pageSize';
+      var pageNumberName = alias.pageNumber ? alias.pageNumber : 'pageNumber';
+      postData[pageSizeName] = pageSize;
+      postData[pageNumberName] = pageNumber;
+
+      var ajaxParams = typeof self.attributes.ajax === 'function' ? self.attributes.ajax() : self.attributes.ajax;
+
+      // If the pageNumber's value starts with 0 via Ajax
+      if (ajaxParams && ajaxParams.pageNumberStartWithZero) {
+        postData[pageNumberName] = pageNumber - 1;
+      }
+
+      var formatAjaxParams = {
+        type: 'get',
+        cache: false,
+        data: {},
+        contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+        dataType: 'json',
+        async: true
+      };
+
+      deepExtend(formatAjaxParams, ajaxParams);
+      extend(formatAjaxParams.data, postData);
+
+      formatAjaxParams.url = self.attributes.dataSource;
+      formatAjaxParams.success = function (response) {
+        try {
+          self.model.originalResponse = response;
+          if (self.isDynamicTotalNumber) {
+            self.findTotalNumberFromRemoteResponse(response);
+          } else {
+            self.model.totalNumber = self.attributes.totalNumber;
+          }
+
+          var finalData = self.filterDataWithLocator(response);
+          render(finalData);
+        } catch (e) {
+          if (typeof self.attributes.onError === 'function') {
+            self.attributes.onError(e, 'ajaxSuccessHandlerError');
+          } else {
+            throw e;
+          }
+        }
+      };
+      formatAjaxParams.error = function (jqXHR, textStatus, errorThrown) {
+        self.attributes.formatAjaxError && self.attributes.formatAjaxError(jqXHR, textStatus, errorThrown);
+        self.enable();
+      };
+
+      self.disable();
+
+      if (self.attributes.ajaxFunction) {
+        self.attributes.ajaxFunction(formatAjaxParams);
+      } else {
+        // Vanilla AJAX implementation
+        var xhr = new XMLHttpRequest();
+        var url = formatAjaxParams.url;
+        var method = formatAjaxParams.type.toUpperCase();
+
+        if (method === 'GET') {
+          var params = [];
+          for (var key in formatAjaxParams.data) {
+            params.push(encodeURIComponent(key) + '=' + encodeURIComponent(formatAjaxParams.data[key]));
+          }
+          if (params.length > 0) {
+            url += (url.indexOf('?') === -1 ? '?' : '&') + params.join('&');
+          }
+        }
+
+        xhr.open(method, url, formatAjaxParams.async);
+        xhr.setRequestHeader('Content-Type', formatAjaxParams.contentType);
+
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              var response = JSON.parse(xhr.responseText);
+              formatAjaxParams.success(response);
+            } else {
+              formatAjaxParams.error(xhr, 'error', xhr.statusText);
+            }
+          }
+        };
+
+        if (method === 'POST') {
+          var postParams = [];
+          for (var key in formatAjaxParams.data) {
+            postParams.push(encodeURIComponent(key) + '=' + encodeURIComponent(formatAjaxParams.data[key]));
+          }
+          xhr.send(postParams.join('&'));
+        } else {
+          xhr.send();
+        }
+      }
+
+      function render(data) {
+        if (self.callHook('beforePaging', pageNumber) === false) return false;
+
+        // Pagination direction
+        model.direction = typeof model.pageNumber === 'undefined' ? 0 : (pageNumber > model.pageNumber ? 1 : -1);
+
+        model.pageNumber = pageNumber;
+
+        self.render();
+
+        if (self.disabled && self.isAsync) {
+          // enable pagination
+          self.enable();
+        }
+
+        // cache model data
+        self.container.paginationData.model = model;
+
+        // format result data before callback invoked
+        if (self.attributes.formatResult) {
+          // Check if data contains DOM elements
+          var cloneData;
+          if (data.length > 0 && data[0] instanceof Element) {
+            // For DOM elements, create a shallow copy
+            cloneData = Array.from(data);
+          } else {
+            // For regular data, use JSON clone
+            cloneData = JSON.parse(JSON.stringify(data));
+          }
+          if (!Helpers.isArray(data = self.attributes.formatResult(cloneData))) {
+            data = cloneData;
+          }
+        }
+
+        self.container.paginationData.currentPageData = data;
+
+        self.doCallback(data, callback);
+
+        self.callHook('afterPaging', pageNumber);
+
+        if (pageNumber == 1) {
+          self.callHook('afterIsFirstPage');
+        } else if (pageNumber == self.getTotalPage()) {
+          self.callHook('afterIsLastPage');
+        }
+      }
+    },
+
+    doCallback: function (data, customCallback) {
+      var self = this;
+      var model = self.model;
+
+      if (typeof customCallback === 'function') {
+        customCallback(data, model);
+      } else if (typeof self.attributes.callback === 'function') {
+        self.attributes.callback(data, model);
+      }
+    },
+
+    destroy: function () {
+      if (this.callHook('beforeDestroy') === false) return;
+
+      // Clear breakpoint resize timeout
+      if (this.resizeTimeout) {
+        clearTimeout(this.resizeTimeout);
+      }
+
+      this.model.el.remove();
+      this.container.paginationData = {};
+
+      // Remove style element
+      var styleElement = document.getElementById('paginationjs-style');
+      if (styleElement) {
+        styleElement.remove();
+      }
+
+      this.callHook('afterDestroy');
+    },
+
+    previous: function (callback) {
+      this.go(this.model.pageNumber - 1, callback);
+    },
+
+    next: function (callback) {
+      this.go(this.model.pageNumber + 1, callback);
+    },
+
+    disable: function () {
+      var self = this;
+      var source = self.isAsync ? 'async' : 'sync';
+
+      if (self.callHook('beforeDisable', source) === false) return;
+
+      self.disabled = true;
+      self.model.disabled = true;
+
+      self.callHook('afterDisable', source);
+    },
+
+    enable: function () {
+      var self = this;
+      var source = self.isAsync ? 'async' : 'sync';
+
+      if (self.callHook('beforeEnable', source) === false) return;
+
+      self.disabled = false;
+      self.model.disabled = false;
+
+      self.callHook('afterEnable', source);
+    },
+
+    refresh: function (callback) {
+      this.go(this.model.pageNumber, callback);
+    },
+
+    show: function () {
+      var self = this;
+
+      if (self.model.el.style.display !== 'none') return;
+
+      self.model.el.style.display = 'block';
+    },
+
+    hide: function () {
+      var self = this;
+
+      if (self.model.el.style.display === 'none') return;
+
+      self.model.el.style.display = 'none';
+    },
+
+    replaceVariables: function (template, variables) {
+      var formattedString;
+
+      for (var key in variables) {
+        var value = variables[key];
+        var regexp = new RegExp('<%=\\s*' + key + '\\s*%>', 'img');
+
+        formattedString = (formattedString || template).replace(regexp, value);
+      }
+
+      return formattedString;
+    },
+
+    getPagingData: function (number) {
+      var pageSize = this.attributes.pageSize;
+      var dataSource = this.attributes.dataSource;
+      var totalNumber = this.getTotalNumber();
+
+      var start = pageSize * (number - 1) + 1;
+      var end = Math.min(number * pageSize, totalNumber);
+
+      // Check if dataSource contains DOM elements
+      if (dataSource.length > 0 && dataSource[0] instanceof Element) {
+        return dataSource.slice(start - 1, end);
+      }
+
+      return dataSource.slice(start - 1, end);
+    },
+
+    getTotalNumber: function () {
+      return this.model.totalNumber || this.attributes.totalNumber || 0;
+    },
+
+    getTotalPage: function () {
+      return Math.ceil(this.getTotalNumber() / this.attributes.pageSize);
+    },
+
+    getLocator: function (locator) {
+      var result;
+
+      if (typeof locator === 'string') {
+        result = locator;
+      } else if (typeof locator === 'function') {
+        result = locator();
+      } else {
+        throwError('"locator" is incorrect. Expect string or function type.');
+      }
+
+      return result;
+    },
+
+    filterDataWithLocator: function (dataSource) {
+      var locator = this.getLocator(this.attributes.locator);
+      var filteredData;
+
+      // Datasource is an Object, use "locator" to locate available data
+      if (Helpers.isObject(dataSource)) {
+        try {
+          var locatorParts = locator.split('.');
+          for (var i = 0; i < locatorParts.length; i++) {
+            filteredData = (filteredData ? filteredData : dataSource)[locatorParts[i]];
+          }
+        }
+        catch (e) {
+          // ignore
+        }
+
+        if (!filteredData) {
+          throwError('dataSource.' + locator + ' is undefined.');
+        } else if (!Helpers.isArray(filteredData)) {
+          throwError('dataSource.' + locator + ' should be an Array.');
+        }
+      }
+
+      return filteredData || dataSource;
+    },
+
+    parseDataSource: function (dataSource, callback) {
+      var self = this;
+
+      if (Helpers.isObject(dataSource)) {
+        callback(self.attributes.dataSource = self.filterDataWithLocator(dataSource));
+      } else if (Helpers.isArray(dataSource)) {
+        callback(self.attributes.dataSource = dataSource);
+      } else if (typeof dataSource === 'function') {
+        dataSource(function (data) {
+          if (!Helpers.isArray(data)) {
+            throwError('The parameter of "done" Function should be an Array.');
+          }
+          self.parseDataSource.call(self, data, callback);
+        });
+      } else if (typeof dataSource === 'string') {
+        if (/^https?|file:/.test(dataSource)) {
+          self.attributes.ajaxDataType = 'jsonp';
+        }
+        callback(dataSource);
+      } else {
+        throwError('Unexpected dataSource type');
+      }
+    },
+
+    callHook: function (hook) {
+      var paginationData = this.container.paginationData || {};
+      var result;
+
+      var args = Array.prototype.slice.apply(arguments);
+      args.shift();
+
+      if (this.attributes[hook] && typeof this.attributes[hook] === 'function') {
+        if (this.attributes[hook].apply(global, args) === false) {
+          result = false;
+        }
+      }
+
+      if (paginationData.hooks && paginationData.hooks[hook]) {
+        paginationData.hooks[hook].forEach(function (item) {
+          if (item.apply(global, args) === false) {
+            result = false;
+          }
+        });
+      }
+
+      return result !== false;
+    },
+
+    initializeBreakpoints: function () {
+      var self = this;
+
+      // Get current breakpoint configuration
+      var currentConfig = self.getCurrentBreakpointConfig();
+
+      // Apply breakpoint configuration
+      self.applyBreakpointConfig(currentConfig);
+
+      // Listen for window resize
+      addEvent(window, 'resize', function () {
+        self.handleResize();
+      });
+    },
+
+    getCurrentBreakpointConfig: function () {
+      var self = this;
+      var width = window.innerWidth;
+
+      var sortedBreakpoints = Object.keys(self.breakpoints)
+        .map(Number)
+        .sort(function (a, b) { return b - a; });
+
+      for (var i = 0; i < sortedBreakpoints.length; i++) {
+        var breakpoint = sortedBreakpoints[i];
+        if (width >= breakpoint) {
+          var result = {
+            breakpoint: breakpoint,
+            config: self.breakpoints[breakpoint]
+          };
+          return result;
+        }
+      }
+
+      return null;
+    },
+
+    applyBreakpointConfig: function (breakpointData) {
+      var self = this;
+
+      if (!breakpointData) {
+        return;
+      }
+
+      var newConfig = breakpointData.config;
+      var breakpoint = breakpointData.breakpoint;
+
+      // Check if configuration actually changed
+      if (self.currentBreakpoint === breakpoint) {
+        return;
+      }
+
+      self.currentBreakpoint = breakpoint;
+
+      // Apply new configuration
+      for (var key in newConfig) {
+        if (newConfig.hasOwnProperty(key)) {
+          self.attributes[key] = newConfig[key];
+
+          // Update model for critical properties
+          if (key === 'pageSize') {
+            self.model.pageSize = newConfig[key];
+          } else if (key === 'pageRange') {
+            self.model.pageRange = newConfig[key];
+          }
+        }
+      }
+
+      // Re-render pagination
+      self.render();
+
+      // Trigger callback if exists
+      if (typeof self.attributes.callback === 'function') {
+        var currentData = self.getPagingData(self.model.pageNumber || self.attributes.pageNumber);
+        self.attributes.callback(currentData, self.model);
+      }
+    },
+
+    handleResize: function () {
+      var self = this;
+      var newBreakpointConfig = self.getCurrentBreakpointConfig();
+
+      if (newBreakpointConfig && newBreakpointConfig.breakpoint !== self.currentBreakpoint) {
+        self.applyBreakpointConfig(newBreakpointConfig);
+      }
+    },
+
+    observer: function () {
+      var self = this;
+      var el = self.model.el;
+
+      // Go to specified page number
+      addEvent(self.container, eventPrefix + 'go', function (event) {
+        var pageNumber = event.detail;
+        if (typeof pageNumber === 'string') {
+          pageNumber = parseInt(pageNumber.trim());
+        }
+
+        if (!pageNumber) return;
+
+        if (typeof pageNumber !== 'number') {
+          throwError('"pageNumber" is incorrect. (Number)');
+        }
+
+        self.go(pageNumber);
+      });
+
+      // Page number button click listener
+      addEvent(el, 'click', function (event) {
+        var target = event.target.closest('.J-paginationjs-page');
+        if (!target) return;
+
+        var pageNumber = target.getAttribute('data-num');
+        if (pageNumber) pageNumber = pageNumber.trim();
+
+        if (!pageNumber || target.classList.contains(self.attributes.disableClassName) || target.classList.contains(self.attributes.activeClassName)) return;
+
+        if (self.callHook('beforePageOnClick', event, pageNumber) === false) return false;
+
+        self.go(pageNumber);
+
+        self.callHook('afterPageOnClick', event, pageNumber);
+
+        if (!self.attributes.pageLink) {
+          event.preventDefault();
+          return false;
         }
       });
-    });
-  }
-  async processAjaxData(url) {
-    const ajaxOptions = this.getAjaxOptions();
-    try {
-      const response = await this.makeAjaxRequest(url, ajaxOptions);
-      const data = this.processAjaxResponse(response);
-      const filteredData = filterDataWithLocator(data, this.options.locator);
-      if (this.options.totalNumberLocator) {
-        this.model.totalNumber = this.options.totalNumberLocator(response);
-      } else {
-        this.model.totalNumber = filteredData.length;
-      }
-      if (this.options.groupItems) {
-        return this.groupData(filteredData);
-      }
-      return this.paginateData(filteredData);
-    } catch (error) {
-      if (this.options.onError) {
-        this.options.onError(error, "ajax");
-      }
-      return [];
-    }
-  }
-  getAjaxOptions() {
-    const ajax = this.options.ajax;
-    if (typeof ajax === "function") {
-      return ajax();
-    }
-    return ajax || {};
-  }
-  async makeAjaxRequest(url, options) {
-    const { type = "GET", data, contentType, dataType, async = true, cache = true } = options;
-    const requestOptions = {
-      method: type,
-      headers: {
-        "Content-Type": contentType || "application/x-www-form-urlencoded"
-      }
-    };
-    if (type === "POST" && data) {
-      requestOptions.body = typeof data === "string" ? data : JSON.stringify(data);
-    }
-    if (!cache) {
-      requestOptions.cache = "no-cache";
-    }
-    const response = await fetch(url, requestOptions);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    if (dataType === "json") {
-      return response.json();
-    }
-    return response.text();
-  }
-  processAjaxResponse(response) {
-    if (Array.isArray(response)) {
-      return response;
-    }
-    if (typeof response === "string") {
-      try {
-        return JSON.parse(response);
-      } catch (e) {
-        return response;
-      }
-    }
-    return response;
-  }
-  paginateData(data) {
-    const startIndex = (this.model.pageNumber - 1) * this.model.pageSize;
-    const endIndex = startIndex + this.model.pageSize;
-    const pageData = data.slice(startIndex, endIndex);
-    if (data.length > 0 && data[0] instanceof HTMLElement) {
-      data.forEach((item) => {
-        item.setAttribute("hidden", "");
+
+      // Previous button click listener
+      addEvent(el, 'click', function (event) {
+        var target = event.target.closest('.J-paginationjs-previous');
+        if (!target) return;
+
+        var pageNumber = target.getAttribute('data-num');
+        if (pageNumber) pageNumber = pageNumber.trim();
+
+        if (!pageNumber || target.classList.contains(self.attributes.disableClassName)) return;
+
+        if (self.callHook('beforePreviousOnClick', event, pageNumber) === false) return false;
+
+        self.go(pageNumber);
+
+        self.callHook('afterPreviousOnClick', event, pageNumber);
+
+        if (!self.attributes.pageLink) {
+          event.preventDefault();
+          return false;
+        }
       });
-      pageData.forEach((item) => {
-        item.removeAttribute("hidden");
+
+      // Next button click listener
+      addEvent(el, 'click', function (event) {
+        var target = event.target.closest('.J-paginationjs-next');
+        if (!target) return;
+
+        var pageNumber = target.getAttribute('data-num');
+        if (pageNumber) pageNumber = pageNumber.trim();
+
+        if (!pageNumber || target.classList.contains(self.attributes.disableClassName)) return;
+
+        if (self.callHook('beforeNextOnClick', event, pageNumber) === false) return false;
+
+        self.go(pageNumber);
+
+        self.callHook('afterNextOnClick', event, pageNumber);
+
+        if (!self.attributes.pageLink) {
+          event.preventDefault();
+          return false;
+        }
       });
+
+      // Go button click listener
+      addEvent(el, 'click', function (event) {
+        var target = event.target.closest('.J-paginationjs-go-button');
+        if (!target) return;
+
+        var pageNumber = el.querySelector('.J-paginationjs-go-pagenumber').value;
+
+        if (self.callHook('beforeGoButtonOnClick', event, pageNumber) === false) return false;
+
+        triggerEvent(self.container, eventPrefix + 'go', pageNumber);
+
+        self.callHook('afterGoButtonOnClick', event, pageNumber);
+      });
+
+      // go input enter keyup listener
+      addEvent(el, 'keyup', function (event) {
+        if (event.target.classList.contains('J-paginationjs-go-pagenumber') && event.which === 13) {
+          var pageNumber = event.target.value;
+
+          if (self.callHook('beforeGoInputOnEnter', event, pageNumber) === false) return false;
+
+          triggerEvent(self.container, eventPrefix + 'go', pageNumber);
+
+          // Maintain the cursor
+          el.querySelector('.J-paginationjs-go-pagenumber').focus();
+
+          self.callHook('afterGoInputOnEnter', event, pageNumber);
+        }
+      });
+
+      addEvent(el, 'change', function (event) {
+        if (!event.target.classList.contains('J-paginationjs-size-select')) return;
+
+        var size = parseInt(event.target.value);
+        var currentPage = self.model.pageNumber || self.attributes.pageNumber;
+
+        if (typeof size !== 'number') return;
+
+        if (self.callHook('beforeSizeSelectorChange', event, size) === false) return false;
+
+        self.attributes.pageSize = size;
+        self.model.pageSize = size;
+        self.model.totalPage = self.getTotalPage();
+        if (currentPage > self.model.totalPage) {
+          currentPage = self.model.totalPage;
+        }
+        self.go(currentPage);
+
+        self.callHook('afterSizeSelectorChange', event, size);
+
+        if (!self.attributes.pageLink) {
+          event.preventDefault();
+          return false;
+        }
+      });
+
+      // Previous page
+      addEvent(self.container, eventPrefix + 'previous', function (event) {
+        self.previous();
+      });
+
+      // Next page
+      addEvent(self.container, eventPrefix + 'next', function (event) {
+        self.next();
+      });
+
+      // Disable
+      addEvent(self.container, eventPrefix + 'disable', function (event) {
+        self.disable();
+      });
+
+      // Enable
+      addEvent(self.container, eventPrefix + 'enable', function (event) {
+        self.enable();
+      });
+
+      // Refresh
+      addEvent(self.container, eventPrefix + 'refresh', function (event) {
+        self.refresh();
+      });
+
+      // Show
+      addEvent(self.container, eventPrefix + 'show', function (event) {
+        self.show();
+      });
+
+      // Hide
+      addEvent(self.container, eventPrefix + 'hide', function (event) {
+        self.hide();
+      });
+
+      // Destroy
+      addEvent(self.container, eventPrefix + 'destroy', function (event) {
+        self.destroy();
+      });
+
+      // Whether to load the default page
+      var validTotalPage = Math.max(self.getTotalPage(), 1);
+      var defaultPageNumber = self.attributes.pageNumber;
+
+      // Default pageNumber should be 1 when totalNumber is dynamic
+      if (self.isDynamicTotalNumber) {
+        if (self.attributes.resetPageNumberOnInit) defaultPageNumber = 1;
+      }
+
+      if (self.attributes.triggerPagingOnInit) {
+        triggerEvent(self.container, eventPrefix + 'go', Math.min(defaultPageNumber, validTotalPage));
+      }
     }
-    return pageData;
-  }
-  groupData(data) {
-    const groupedData = [];
-    const totalPage = Math.ceil(this.model.totalNumber / this.model.pageSize);
-    for (let i = 1; i <= totalPage; i++) {
-      const startIndex = (i - 1) * this.model.pageSize;
-      const endIndex = startIndex + this.model.pageSize;
-      const pageData = data.slice(startIndex, endIndex);
-      if (i === this.model.pageNumber) {
-        groupedData.push(...pageData);
+  };
+
+  // Instance defaults
+  Pagination.defaults = {
+
+    // Data source
+    // Array | String | Function | Object
+    //dataSource: '',
+
+    // String | Function
+    //locator: 'data',
+
+    // Function
+    //totalNumberLocator: function() {},
+
+    // Total number of data items
+    totalNumber: 0,
+
+    // Default page number
+    pageNumber: 1,
+
+    // Number of data items per page
+    pageSize: 10,
+
+    // Page range (pages around current page)
+    pageRange: 2,
+
+    // Whether to display the 'Previous' button
+    showPrevious: true,
+
+    // Whether to display the 'Next' button
+    showNext: true,
+
+    // Whether to display the page buttons
+    showPageNumbers: true,
+
+    showNavigator: false,
+
+    // Whether to display the 'Go' input
+    showGoInput: false,
+
+    // Whether to display the 'Go' button
+    showGoButton: false,
+
+    showSizeChanger: false,
+
+    sizeChangerOptions: [10, 20, 50, 100],
+
+    // Page link
+    pageLink: '',
+
+    // 'Previous' text
+    prevText: '&lsaquo;',
+
+    // 'Next' text
+    nextText: '&rsaquo;',
+
+    // Ellipsis text
+    ellipsisText: '...',
+
+    // 'Go' button text
+    goButtonText: 'Go',
+
+    // Additional class name(s) for the Pagination container
+    //className: '',
+
+    classPrefix: 'paginationjs',
+
+    activeClassName: 'active',
+
+    // class name when disabled
+    disableClassName: 'disabled',
+
+    //ulClassName: '',
+
+    //pageClassName: '',
+
+    //prevClassName: '',
+
+    //nextClassName: '',
+
+    formatNavigator: 'Total <%= totalNumber %> items',
+
+    formatGoInput: '<%= input %>',
+
+    formatGoButton: '<%= button %>',
+
+    // position in the container
+    position: 'bottom',
+
+    // Auto hide previous button when current page is the first
+    autoHidePrevious: false,
+
+    // Auto hide next button when current page is the last
+    autoHideNext: false,
+
+    //header: '',
+
+    //footer: '',
+
+    //alias: {},
+
+    // Whether to trigger pagination at initialization
+    triggerPagingOnInit: true,
+
+    // Whether to reset page number at initialization, it works only if dataSource is a URL and totalNumberLocator is specified
+    resetPageNumberOnInit: true,
+
+    // Whether to hide pagination when less than one page
+    hideOnlyOnePage: false,
+
+    hideFirstOnEllipsisShow: false,
+
+    hideLastOnEllipsisShow: false,
+
+    // Customize item's innerHTML
+    callback: function () { }
+  };
+
+  // Hook register
+  Pagination.prototype.addHook = function (hook, callback) {
+    if (arguments.length < 2) {
+      throwError('Expect 2 arguments at least.');
+    }
+
+    if (typeof callback !== 'function') {
+      throwError('callback should be a function.');
+    }
+
+    var paginationData = this.container.paginationData;
+
+    if (!paginationData) {
+      this.container.paginationData = {};
+      paginationData = this.container.paginationData;
+    }
+
+    if (!paginationData.hooks) {
+      paginationData.hooks = {};
+    }
+
+    if (!paginationData.hooks[hook]) {
+      paginationData.hooks[hook] = [];
+    }
+
+    paginationData.hooks[hook].push(callback);
+  };
+
+  // Static method
+  Pagination.create = function (selector, options) {
+    if (arguments.length < 2) {
+      throwError('Requires two parameters.');
+    }
+
+    var container;
+
+    // 'selector' is a DOM element
+    if (typeof selector !== 'string' && selector instanceof Element) {
+      container = selector;
+    } else {
+      container = document.querySelector(selector);
+    }
+
+    if (!container) return;
+
+    return new Pagination(container, options);
+  };
+
+  // Check parameters
+  function parameterChecker(args) {
+    if (!args.dataSource) {
+      throwError('"dataSource" is required.');
+    }
+
+    if (typeof args.dataSource === 'string') {
+      if (args.totalNumberLocator === undefined) {
+        if (args.totalNumber === undefined) {
+          throwError('"totalNumber" is required.');
+        } else if (!isNumeric(args.totalNumber)) {
+          throwError('"totalNumber" is incorrect. Expect numberic type');
+        }
       } else {
-        const groupElement = document.createElement("div");
-        groupElement.className = this.options.groupClass || "pagination-group";
-        groupElement.setAttribute("hidden", "false");
-        groupElement.setAttribute("data-page", i.toString());
-        groupElement.textContent = `Página ${i}`;
-        groupedData.push(groupElement);
-      }
-    }
-    return groupedData;
-  }
-}
-class PaginationCore {
-  constructor(container, options = {}) {
-    this.isInitialized = false;
-    this.generatePagesToShow = (currentPage, totalPage) => {
-      let pagesToShow = [];
-      let totalButtons;
-      if (this.options.showEllipsis) {
-        totalButtons = 7;
-      } else {
-        totalButtons = 5;
-      }
-      if (totalPage <= totalButtons) {
-        pagesToShow = Array.from({ length: totalPage }, (_, i) => i + 1);
-        return pagesToShow;
-      }
-      if (currentPage <= totalButtons / 2) {
-        pagesToShow = [1, 2, 3, 4];
-        if (this.options.showEllipsis) {
-          pagesToShow.push("createElipsisHTML");
+        if (typeof args.totalNumberLocator !== 'function') {
+          throwError('"totalNumberLocator" should be a Function.');
         }
-        pagesToShow.push(totalPage);
-      } else if (currentPage > totalButtons / 2 && currentPage < totalPage - 2) {
-        pagesToShow = [1];
-        if (this.options.showEllipsis) {
-          pagesToShow.push("createElipsisHTML");
-        }
-        pagesToShow.push(currentPage - 1, currentPage, currentPage + 1);
-        if (this.options.showEllipsis) {
-          pagesToShow.push("createElipsisHTML");
-        }
-        pagesToShow.push(totalPage);
-      } else if (currentPage >= totalPage - totalButtons / 2) {
-        pagesToShow = [1];
-        if (this.options.showEllipsis) {
-          pagesToShow.push("createElipsisHTML");
-        }
-        pagesToShow.push(totalPage - 4, totalPage - 3, totalPage - 2, totalPage - 1, totalPage);
       }
-      return pagesToShow;
-    };
-    this.el = typeof container === "string" ? document.querySelector(container) : container;
-    if (!this.el) {
-      throw new Error("Container element not found");
-    }
-    this.options = mergeOptions(options);
-    if (typeof this.options.dataSource === "string" && !this.options.dataSource.startsWith("http")) {
-      const elements = Array.from(document.querySelectorAll(this.options.dataSource));
-      this.options.dataSource = elements;
-      this.options.totalNumber = elements.length;
-    }
-    this.model = this.createModel();
-    this.eventHandler = new EventHandler(this.options, this.model, this.el);
-    this.dataHandler = new DataHandler(this.options, this.model);
-  }
-  createModel() {
-    return {
-      pageNumber: this.options.pageNumber || 1,
-      pageSize: this.options.pageSize || 10,
-      totalNumber: this.options.totalNumber || 0,
-      totalPage: Math.ceil((this.options.totalNumber || 0) / (this.options.pageSize || 10)),
-      disabled: this.options.disabled || false
-    };
-  }
-  async init() {
-    if (this.isInitialized) return;
-    if (this.options.beforeInit) {
-      const result = this.options.beforeInit();
-      if (result === false) return;
-    }
-    this.render();
-    this.bindEvents();
-    this.isInitialized = true;
-    if (this.options.afterInit) {
-      this.options.afterInit(this.el);
-    }
-    if (this.options.triggerPagingOnInit) {
-      await this.paging();
-    }
-  }
-  render(isForced = false) {
-    if (this.options.beforeRender) {
-      const result = this.options.beforeRender(isForced);
-      if (result === false) return;
-    }
-    const args = this.getPaginationArgs();
-    const html = generateHTML(args, this.options);
-    this.el.innerHTML = html;
-    if (this.options.afterRender) {
-      this.options.afterRender(isForced);
-    }
-  }
-  getPaginationArgs() {
-    const currentPage = this.model.pageNumber;
-    const pagesToShow = this.generatePagesToShow(currentPage, this.model.totalPage);
-    let rangeStart = Math.max(1, currentPage - this.options.pageRange);
-    let rangeEnd = Math.min(this.model.totalPage, currentPage + this.options.pageRange);
-    if (rangeEnd - rangeStart < this.options.pageRange * 2) {
-      if (rangeStart === 1) {
-        rangeEnd = Math.min(this.model.totalPage, rangeStart + this.options.pageRange * 2);
-      } else {
-        rangeStart = Math.max(1, rangeEnd - this.options.pageRange * 2);
+    } else if (Helpers.isObject(args.dataSource)) {
+      if (typeof args.locator === 'undefined') {
+        throwError('"dataSource" is an Object, please specify a "locator".');
+      } else if (typeof args.locator !== 'string' && typeof args.locator !== 'function') {
+        throwError('' + args.locator + ' is incorrect. Expect string or function type');
       }
     }
-    return {
-      totalPage: this.model.totalPage,
-      currentPage,
-      pageRange: this.options.pageRange,
-      rangeStart,
-      rangeEnd,
-      pagesToShow
-    };
+
+    if (args.formatResult !== undefined && typeof args.formatResult !== 'function') {
+      throwError('"formatResult" should be a Function.');
+    }
+
+    if (args.onError !== undefined && typeof args.onError !== 'function') {
+      throwError('"onError" should be a Function.');
+    }
   }
-  bindEvents() {
-    this.eventHandler.bindEvents();
-    this.el.addEventListener("pagination", async (e) => {
-      await this.paging();
+
+  // Export to global scope
+  global.Pagination = Pagination;
+
+  // AMD support
+  if (typeof define === 'function' && define.amd) {
+    define(function () {
+      return Pagination;
     });
   }
-  async paging() {
-    if (this.model.disabled) return;
-    try {
-      this.updatePaginationState();
-      const data = await this.dataHandler.getData();
-      if (this.options.callback) {
-        this.options.callback(data, this.model);
-      }
-    } catch (error) {
-      if (this.options.onError) {
-        this.options.onError(error, "paging");
-      }
-    }
+
+  // CommonJS support
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = Pagination;
   }
-  updatePaginationState() {
-    const currentPage = this.model.pageNumber;
-    const totalPage = this.model.totalPage;
-    const pageElements = this.el.querySelectorAll(`.${this.options.classPrefix}-page`);
-    pageElements.forEach((pageEl) => {
-      const pageNumber = parseInt(pageEl.getAttribute("data-num") || "1");
-      if (pageNumber === currentPage) {
-        pageEl.classList.add(this.options.activeClassName);
-      } else {
-        pageEl.classList.remove(this.options.activeClassName);
-      }
-    });
-    const prevButton = this.el.querySelector(`.${this.options.classPrefix}-prev`);
-    if (prevButton) {
-      if (currentPage <= 1) {
-        prevButton.classList.add(this.options.disableClassName);
-        prevButton.removeAttribute("data-num");
-      } else {
-        prevButton.classList.remove(this.options.disableClassName);
-        prevButton.setAttribute("data-num", (currentPage - 1).toString());
-      }
-    }
-    const nextButton = this.el.querySelector(`.${this.options.classPrefix}-next`);
-    if (nextButton) {
-      if (currentPage >= totalPage) {
-        nextButton.classList.add(this.options.disableClassName);
-        nextButton.removeAttribute("data-num");
-      } else {
-        nextButton.classList.remove(this.options.disableClassName);
-        nextButton.setAttribute("data-num", (currentPage + 1).toString());
-      }
-    }
-    const args = this.getPaginationArgs();
-    this.el.innerHTML = generateHTML(args, this.options);
-  }
-  // Métodos públicos
-  async goToPage(pageNumber) {
-    const totalPage = Math.ceil(this.model.totalNumber / this.model.pageSize);
-    if (pageNumber < 1) {
-      pageNumber = 1;
-    } else if (pageNumber > totalPage) {
-      pageNumber = totalPage;
-    }
-    if (pageNumber !== this.model.pageNumber) {
-      this.model.pageNumber = pageNumber;
-      await this.paging();
-    }
-  }
-  async goToPreviousPage() {
-    if (this.model.pageNumber > 1) {
-      await this.goToPage(this.model.pageNumber - 1);
-    }
-  }
-  async goToNextPage() {
-    const totalPage = Math.ceil(this.model.totalNumber / this.model.pageSize);
-    if (this.model.pageNumber < totalPage) {
-      await this.goToPage(this.model.pageNumber + 1);
-    }
-  }
-  async goToFirstPage() {
-    await this.goToPage(1);
-  }
-  async goToLastPage() {
-    const totalPage = Math.ceil(this.model.totalNumber / this.model.pageSize);
-    await this.goToPage(totalPage);
-  }
-  async setPageSize(pageSize) {
-    if (pageSize !== this.model.pageSize) {
-      this.model.pageSize = pageSize;
-      this.model.pageNumber = 1;
-      await this.paging();
-    }
-  }
-  async refresh() {
-    await this.paging();
-  }
-  async destroy() {
-    if (this.options.beforeDestroy) {
-      const result = this.options.beforeDestroy();
-      if (result === false) return;
-    }
-    this.el.innerHTML = "";
-    this.isInitialized = false;
-    if (this.options.afterDestroy) {
-      this.options.afterDestroy();
-    }
-  }
-  // Getters
-  getModel() {
-    return { ...this.model };
-  }
-  getOptions() {
-    return { ...this.options };
-  }
-  getElement() {
-    return this.el;
-  }
-  isDisabled() {
-    return this.model.disabled;
-  }
-  // Setters
-  setDisabled(disabled) {
-    this.model.disabled = disabled;
-  }
-  updateOptions(newOptions) {
-    this.options = { ...this.options, ...newOptions };
-    this.model = this.createModel();
-  }
-}
-export {
-  DEFAULT_OPTIONS,
-  PaginationCore as Pagination
-};
+
+})(this); 
