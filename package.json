@@ -1,0 +1,31 @@
+{
+  "name": "pagindata-js",
+  "version": "1.0.0",
+  "description": "A lightweight and modern pagination library written in vanilla JavaScript with no external dependencies",
+  "main": "pagination.js",
+  "scripts": {
+    "build": "uglifyjs pagination.js -o pagination.min.js -c -m"
+  },
+  "keywords": [
+    "pagination",
+    "vanilla-js",
+    "javascript",
+    "responsive",
+    "breakpoints",
+    "dom",
+    "no-dependencies"
+  ],
+  "author": "Natanael Peralta",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NataPeralta/PaginDataJS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NataPeralta/PaginDataJS/issues"
+  },
+  "homepage": "https://github.com/NataPeralta/PaginDataJS#readme",
+  "devDependencies": {
+    "uglify-js": "^3.17.4"
+  }
+}
