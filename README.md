@@ -15,8 +15,8 @@ A lightweight and modern pagination library written in vanilla JavaScript with n
 
 ### CDN
 ```html
-<script src="https://cdn.jsdelivr.net/gh/NataPeralta/PaginDataJS/pagination.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/NataPeralta/PaginDataJS/pagination.min.js"></script>
+<script src="[https://cdn.jsdelivr.net/npm/pagindata-js@1.1.0/pagination.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pagindata-js@1.1.0/pagination.min.js"></script>
 ```
 
 ## 🎯 Basic Usage
