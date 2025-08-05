@@ -1,38 +1,36 @@
 {
-  "name": "pagination-js",
-  "version": "1.0.0",
-  "description": "A lightweight pagination library",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "type": "module",
-  "types": "dist/index.d.ts",
+  "name": "pagindata-js",
+  "version": "1.1.0",
+  "description": "A lightweight and modern pagination library written in vanilla JavaScript with no external dependencies",
+  "main": "PaginDataJS.js",
+  "style": "PaginDataJS.css",
   "scripts": {
-    "dev": "vite",
-    "build": "npm run clean:dist && vite build && npm run copy-readme",
-    "build:deep": "npm run clean:dist && vite build && npm run copy-readme",
-    "copy-readme": "cp README.md dist/README.md",
-    "clean:build": "rm -rf build",
-    "clean:dist": "rm -rf dist",
-    "test": "vitest"
+    "build": "uglifyjs PaginDataJS.js -o PaginDataJS.min.js -c -m && uglifycss PaginDataJS.css -o PaginDataJS.min.css"
   },
   "keywords": [
     "pagination",
-    "typescript",
-    "javascript"
+    "vanilla-js",
+    "javascript",
+    "responsive",
+    "breakpoints",
+    "dom",
+    "no-dependencies",
+    "conflict-free",
+    "namespace",
+    "css",
+    "styling"
   ],
-  "author": "",
+  "author": "Natanael Peralta",
   "license": "MIT",
-  "devDependencies": {
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "concurrently": "^8.0.0",
-    "jsdom": "^26.1.0",
-    "serve": "^14.0.0",
-    "terser": "^5.0.0",
-    "typescript": "^5.0.0",
-    "vitest": "^3.2.4"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NataPeralta/PaginDataJS.git"
   },
-  "dependencies": {
-    "vite": "^7.0.0"
+  "bugs": {
+    "url": "https://github.com/NataPeralta/PaginDataJS/issues"
+  },
+  "homepage": "https://github.com/NataPeralta/PaginDataJS#readme",
+  "devDependencies": {
+    "uglify-js": "^3.17.4"
   }
 }
