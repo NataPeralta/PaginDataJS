@@ -9,8 +9,8 @@
   var eventPrefix = '__pagination-';
 
   // Check if pagination is already defined
-  if (global.Pagination) {
-    throwError('plugin conflicted, the name "Pagination" has been taken by another plugin.');
+  if (global.PaginDataJS) {
+    throwError('plugin conflicted, the name "PaginDataJS" has been taken by another plugin.');
   }
 
   // Helper functions
@@ -1327,7 +1327,7 @@
   }
 
   // Export to global scope
-  global.Pagination = Pagination;
+  global.PaginDataJS = Pagination;
 
   // AMD support
   if (typeof define === 'function' && define.amd) {
